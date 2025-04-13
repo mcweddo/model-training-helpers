@@ -159,14 +159,36 @@ def main():
 
     from functools import partial
 
-    from torch.distributed.fsdp.wrap import size_based_auto_wrap_policy
-    size_based_auto_wrap_policy = partial(size_based_auto_wrap_policy,
-                                          min_num_params=1e7)
+    # from torch.distributed.fsdp.wrap import size_based_auto_wrap_policy
+    # size_based_auto_wrap_policy = partial(size_based_auto_wrap_policy,
+    #                                       min_num_params=1e7)
+    # strategy = dict(
+    #     type='FSDPStrategy',
+    #     model_wrapper=dict(auto_wrap_policy=size_based_auto_wrap_policy))
     strategy = dict(
-        type='FSDPStrategy',
-        model_wrapper=dict(auto_wrap_policy=size_based_auto_wrap_policy))
-#    runner = from_cfg(cfg, strategy)
-    runner = RUNNERS.build(cfg)
+        type='DeepSpeedStrategy',
+        fp16=dict(
+            enabled=True,
+            fp16_master_weights_and_grads=False,
+            loss_scale=0,
+            loss_scale_window=500,
+            hysteresis=2,
+            min_loss_scale=1,
+            initial_scale_power=15,
+        ),
+        inputs_to_half=[0],
+        zero_optimization=dict(
+            stage=3,
+            allgather_partitions=True,
+            reduce_scatter=True,
+            allgather_bucket_size=50000000,
+            reduce_bucket_size=50000000,
+            overlap_comm=True,
+            contiguous_gradients=True,
+            cpu_offload=False),
+    )
+    runner = from_cfg(cfg, strategy)
+#     runner = RUNNERS.build(cfg)
     # # build the runner from config
     # if 'runner_type' not in cfg:
     # # build the default runner
