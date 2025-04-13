@@ -99,7 +99,7 @@ model = dict(
 
 # augmentation strategy originates from DETR / Sparse RCNN
 train_pipeline = [
-    dict(type='LoadImageFromFile', imdecode_backend='pillow'),
+    dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
     dict(type='RandomFlip', prob=0.5),
     dict(type='AutoAugment',
@@ -130,7 +130,7 @@ train_pipeline = [
     dict(type='PackDetInputs'),
 ]
 test_pipeline = [
-    dict(type='LoadImageFromFile', imdecode_backend='pillow', backend_args=backend_args),
+    dict(type='LoadImageFromFile', backend_args=backend_args),
     dict(type='Resize', scale=(1333, 800), keep_ratio=True),
     # If you don't have a gt annotation, delete the pipeline
     dict(type='LoadAnnotations', with_bbox=True, with_mask=True),
@@ -143,7 +143,7 @@ test_pipeline = [
 # we use 4 nodes to train this model, with a total batch size of 64
 train_dataloader = dict(
     batch_size=2,
-    num_workers=10,
+    num_workers=8,
     persistent_workers=True,
     sampler=dict(type='DefaultSampler', shuffle=True),
     batch_sampler=dict(type='AspectRatioBatchSampler'),
@@ -190,30 +190,9 @@ test_dataloader = dict(
 #     paramwise_cfg=dict(num_layers=37, layer_decay_rate=0.90,
 #                        depths=[5, 5, 22, 5], offset_lr_scale=0.01))
 # optimizer_config = dict(grad_clip=None)
-#strategy = dict(
-#    type='DeepSpeedStrategy',
-#    fp16=dict(
-#        enabled=True,
-#        fp16_master_weights_and_grads=False,
-#        loss_scale=0,
-#        loss_scale_window=500,
-#        hysteresis=2,
-#        min_loss_scale=1,
-#        initial_scale_power=15,
-#    ),
-#    inputs_to_half=[0],
-#    zero_optimization=dict(
-#        stage=3,
-#        allgather_partitions=True,
-#        reduce_scatter=True,
-#        allgather_bucket_size=50000000,
-#        reduce_bucket_size=50000000,
-#        overlap_comm=True,
-#        contiguous_gradients=True,
-#        cpu_offload=False),
-#)
+
 optim_wrapper = dict(
-    type='AmpOptimWrapper',
+    type='DeepSpeedOptimWrapper',
     constructor='CustomLayerDecayOptimizerConstructor',
     paramwise_cfg={
         'num_layers': 37,
@@ -228,7 +207,7 @@ optim_wrapper = dict(
         betas=(0.9, 0.999),
         weight_decay=0.05,
     ),
-    accumulative_counts=4
+    # accumulative_counts=4
 )
 # fp16 = dict(loss_scale=dict(init_scale=512))
 # evaluation = dict(save_best='auto')
