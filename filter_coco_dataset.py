@@ -54,7 +54,7 @@ def find_and_quarantine_bad_images(image_dir, quarantine_dir=None, delete_bad=Fa
     return bad_images
 
 
-def rebuild_coco_annotations(original_json_path, bad_image_paths, output_json_path):
+def rebuild_coco_annotations(original_json_path, bad_image_paths, output_json_path, image_dir):
     bad_filenames = {Path(p).name for p in bad_image_paths}
 
     with open(original_json_path, 'r') as f:
@@ -63,8 +63,21 @@ def rebuild_coco_annotations(original_json_path, bad_image_paths, output_json_pa
     original_images = coco.get("images", [])
     original_annotations = coco.get("annotations", [])
 
-    valid_images = [img for img in original_images if img["file_name"] not in bad_filenames]
-    valid_image_ids = {img["id"] for img in valid_images}
+    valid_images = []
+    valid_image_ids = set()
+
+    for img in original_images:
+        img_filename = img["file_name"]
+        full_path = os.path.join(image_dir, img_filename)
+
+        # Image is valid if it's not in bad list and the file exists
+        if img_filename not in bad_filenames and os.path.isfile(full_path):
+            valid_images.append(img)
+            valid_image_ids.add(img["id"])
+        else:
+            if not os.path.isfile(full_path):
+                print(f"[MISSING FILE] {img_filename}")
+
     valid_annotations = [ann for ann in original_annotations if ann["image_id"] in valid_image_ids]
 
     filtered_coco = dict(coco)
@@ -113,7 +126,7 @@ def main():
             delete_bad=args.delete
         )
 
-        rebuild_coco_annotations(annot_path, bad_images, output_annot_path)
+        rebuild_coco_annotations(annot_path, bad_images, output_annot_path, image_dir)
 
     print("\n[DONE] All datasets processed.")
 
