@@ -140,6 +140,7 @@ test_pipeline = [
                    'scale_factor'))
 ]
 
+classes = ('2-scratch', '3-missing-piece', '1-dent', '0-crack', '4-broken-glass', '5-broken-light', '6-misplaced-part')
 # we use 4 nodes to train this model, with a total batch size of 64
 train_dataloader = dict(
     batch_size=2,
@@ -152,9 +153,12 @@ train_dataloader = dict(
         data_root=data_root,
         ann_file='annotations/instances_train.json',
         data_prefix=dict(img='images/train/'),
+        test_mode=False,
+        indices=500,
         filter_cfg=dict(filter_empty_gt=False, min_size=32),
         pipeline=train_pipeline,
-        backend_args=backend_args))
+        backend_args=backend_args),
+        metainfo=dict(classes=classes))
 val_dataloader = dict(
     batch_size=1,
     num_workers=2,
@@ -168,7 +172,8 @@ val_dataloader = dict(
         data_prefix=dict(img='images/valid/'),
         test_mode=True,
         pipeline=test_pipeline,
-        backend_args=backend_args))
+        backend_args=backend_args),
+        metainfo=dict(classes=classes))
 test_dataloader = dict(
     batch_size=1,
     num_workers=2,
@@ -182,7 +187,15 @@ test_dataloader = dict(
         data_prefix=dict(img='images/test/'),
         test_mode=True,
         pipeline=test_pipeline,
-        backend_args=backend_args))
+        backend_args=backend_args,
+        metainfo=dict(classes=classes)))
+# val_evaluator = dict(
+#     type='CocoMetric',
+#     ann_file=data_root + 'annotations/instances_valid.json',
+#     metric=['bbox', 'segm'],
+#     format_only=False,
+#     backend_args=backend_args)
+# test_evaluator = val_evaluator
 # optimizer
 # optimizer = dict(
 #     _delete_=True, type='AdamW', lr=0.0001 * 2, weight_decay=0.05,
@@ -249,5 +262,5 @@ custom_hooks = [
     dict(type='SyncBuffersHook'),
 #    dict(type='ProfilerHook', on_trace_ready=dict(type='tb_trace'))
 ]
-auto_scale_lr = dict(enable=True, base_batch_size=10)
+auto_scale_lr = dict(enable=False, base_batch_size=10)
 runner_type = 'FlexibleRunner'
