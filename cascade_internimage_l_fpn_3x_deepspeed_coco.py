@@ -215,10 +215,11 @@ optim_wrapper = dict(
     },
     optimizer=dict(
         _delete_=True,
-        type='ZeroOneAdam',
+        type='FusedAdam',
         lr=0.0001 * 2,
         betas=(0.9, 0.999),
-        weight_decay=0.05,
+        weight_decay=3e-7,
+        adam_w_mode=True
     ),
     # accumulative_counts=4
 )
