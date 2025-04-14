@@ -157,8 +157,8 @@ train_dataloader = dict(
         indices=500,
         filter_cfg=dict(filter_empty_gt=False, min_size=32),
         pipeline=train_pipeline,
-        backend_args=backend_args),
-        metainfo=dict(classes=classes))
+        backend_args=backend_args,
+        metainfo=dict(classes=classes)))
 val_dataloader = dict(
     batch_size=1,
     num_workers=2,
@@ -172,8 +172,8 @@ val_dataloader = dict(
         data_prefix=dict(img='images/valid/'),
         test_mode=True,
         pipeline=test_pipeline,
-        backend_args=backend_args),
-        metainfo=dict(classes=classes))
+        backend_args=backend_args,
+        metainfo=dict(classes=classes)))
 test_dataloader = dict(
     batch_size=1,
     num_workers=2,
