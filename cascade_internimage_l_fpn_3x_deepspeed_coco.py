@@ -140,6 +140,7 @@ test_pipeline = [
                    'scale_factor'))
 ]
 
+classes = ('2-scratch', '3-missing-piece', '1-dent', '0-crack', '4-broken-glass', '5-broken-light', '6-misplaced-part')
 # we use 4 nodes to train this model, with a total batch size of 64
 train_dataloader = dict(
     batch_size=2,
@@ -152,9 +153,12 @@ train_dataloader = dict(
         data_root=data_root,
         ann_file='annotations/instances_train.json',
         data_prefix=dict(img='images/train/'),
+        test_mode=False,
+        indices=500,
         filter_cfg=dict(filter_empty_gt=False, min_size=32),
         pipeline=train_pipeline,
-        backend_args=backend_args))
+        backend_args=backend_args,
+        metainfo=dict(classes=classes)))
 val_dataloader = dict(
     batch_size=1,
     num_workers=2,
@@ -165,11 +169,12 @@ val_dataloader = dict(
         type=dataset_type,
         data_root=data_root,
         ann_file='annotations/instances_valid.json',
-        data_prefix=dict(img='images/val/'),
+        data_prefix=dict(img='images/valid/'),
         test_mode=True,
         pipeline=test_pipeline,
-        backend_args=backend_args))
-test_dataloader = dict(
+        backend_args=backend_args,
+        metainfo=dict(classes=classes)))
+est_dataloader = dict(
     batch_size=1,
     num_workers=2,
     persistent_workers=True,
@@ -182,7 +187,15 @@ test_dataloader = dict(
         data_prefix=dict(img='images/test/'),
         test_mode=True,
         pipeline=test_pipeline,
-        backend_args=backend_args))
+        backend_args=backend_args,
+        metainfo=dict(classes=classes)))
+# val_evaluator = dict(
+#     type='CocoMetric',
+#     ann_file=data_root + 'annotations/instances_valid.json',
+#     metric=['bbox', 'segm'],
+#     format_only=False,
+#     backend_args=backend_args)
+# test_evaluator = val_evaluator
 # optimizer
 # optimizer = dict(
 #     _delete_=True, type='AdamW', lr=0.0001 * 2, weight_decay=0.05,
@@ -202,7 +215,7 @@ optim_wrapper = dict(
     },
     optimizer=dict(
         _delete_=True,
-        type='AdamW',
+        type='ZeroOneAdam',
         lr=0.0001 * 2,
         betas=(0.9, 0.999),
         weight_decay=0.05,
@@ -219,14 +232,14 @@ checkpoint_config = dict(
 resume_from = None
 
 custom_hooks = [
-    dict(
-        type='EMAHook',
-        ema_type='ExpMomentumEMA',
-        momentum=0.0001,
-        update_buffers=True,
-        priority=49),
+    # dict(
+    #     type='EMAHook',
+    #     ema_type='ExpMomentumEMA',
+    #     momentum=0.0001,
+    #     update_buffers=True,
+    #     priority=49),
     dict(type='SyncBuffersHook'),
-    dict(type='ProfilerHook', on_trace_ready=dict(type='tb_trace'))
+    # dict(type='ProfilerHook', on_trace_ready=dict(type='tb_trace'))
 ]
-auto_scale_lr = dict(enable=True, base_batch_size=8)
+auto_scale_lr = dict(enable=True, base_batch_size=2)
 runner_type = 'FlexibleRunner'

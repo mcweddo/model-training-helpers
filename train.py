@@ -56,6 +56,9 @@ def parse_args():
         choices=['none', 'pytorch', 'slurm', 'mpi'],
         default='none',
         help='job launcher')
+    parser.add_argument(
+        '--dspath',
+        help='DeepSpeed config')
     # When using PyTorch version >= 2.0.0, the `torch.distributed.launch`
     # will pass the `--local-rank` parameter to `tools/train.py` instead
     # of `--local_rank`.
@@ -133,9 +136,9 @@ def main():
                                 osp.splitext(osp.basename(args.config))[0])
 
     # enable automatic-mixed-precision training
-    if args.amp is True:
-        cfg.optim_wrapper.type = 'AmpOptimWrapper'
-        cfg.optim_wrapper.loss_scale = 'dynamic'
+    # if args.amp is True:
+    #     cfg.optim_wrapper.type = 'AmpOptimWrapper'
+    #     cfg.optim_wrapper.loss_scale = 'dynamic'
 
     # enable automatically scaling LR
     if args.auto_scale_lr:
@@ -157,7 +160,10 @@ def main():
         cfg.resume = True
         cfg.load_from = args.resume
 
-    from functools import partial
+    if args.dspath is not None:
+        print('Loading from {}'.format(args.dspath))
+
+    # from functools import partial
 
     # from torch.distributed.fsdp.wrap import size_based_auto_wrap_policy
     # size_based_auto_wrap_policy = partial(size_based_auto_wrap_policy,
@@ -167,25 +173,26 @@ def main():
     #     model_wrapper=dict(auto_wrap_policy=size_based_auto_wrap_policy))
     strategy = dict(
         type='DeepSpeedStrategy',
-        fp16=dict(
-            enabled=True,
-            fp16_master_weights_and_grads=False,
-            loss_scale=0,
-            loss_scale_window=500,
-            hysteresis=2,
-            min_loss_scale=1,
-            initial_scale_power=15,
-        ),
-        inputs_to_half=[0],
-        zero_optimization=dict(
-            stage=3,
-            allgather_partitions=True,
-            reduce_scatter=True,
-            allgather_bucket_size=50000000,
-            reduce_bucket_size=50000000,
-            overlap_comm=True,
-            contiguous_gradients=True,
-            cpu_offload=False),
+        config=args.dspath,
+        # fp16=dict(
+        #     enabled=True,
+        #     fp16_master_weights_and_grads=False,
+        #     loss_scale=0,
+        #     loss_scale_window=500,
+        #     hysteresis=2,
+        #     min_loss_scale=1,
+        #     initial_scale_power=15,
+        # ),
+        # inputs_to_half=[0],
+        # zero_optimization=dict(
+        #     stage=3,
+        #     allgather_partitions=True,
+        #     reduce_scatter=True,
+        #     allgather_bucket_size=50000000,
+        #     reduce_bucket_size=50000000,
+        #     overlap_comm=True,
+        #     contiguous_gradients=True,
+        #     cpu_offload=False),
     )
     runner = from_cfg(cfg, strategy)
 #     runner = RUNNERS.build(cfg)
