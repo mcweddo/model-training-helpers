@@ -144,7 +144,7 @@ classes = ('2-scratch', '3-missing-piece', '1-dent', '0-crack', '4-broken-glass'
 # we use 4 nodes to train this model, with a total batch size of 64
 train_dataloader = dict(
     batch_size=2,
-    num_workers=10,
+    num_workers=8,
     persistent_workers=True,
     sampler=dict(type='DefaultSampler', shuffle=True),
     batch_sampler=dict(type='AspectRatioBatchSampler'),
@@ -161,7 +161,7 @@ train_dataloader = dict(
         metainfo=dict(classes=classes)))
 val_dataloader = dict(
     batch_size=1,
-    num_workers=2,
+    num_workers=8,
     persistent_workers=True,
     drop_last=False,
     sampler=dict(type='DefaultSampler', shuffle=False),
@@ -176,7 +176,7 @@ val_dataloader = dict(
         metainfo=dict(classes=classes)))
 test_dataloader = dict(
     batch_size=1,
-    num_workers=2,
+    num_workers=8,
     persistent_workers=True,
     drop_last=False,
     sampler=dict(type='DefaultSampler', shuffle=False),
@@ -239,13 +239,14 @@ optim_wrapper = dict(
         type='AdamW',
         lr=0.0001 * 2,
         betas=(0.9, 0.999),
-        weight_decay=0.05,
+        weight_decay=0.0001,
     ),
     accumulative_counts=4
 )
 # fp16 = dict(loss_scale=dict(init_scale=512))
 # evaluation = dict(save_best='auto')
 checkpoint_config = dict(
+    _delete_=True,
     interval=1,
     max_keep_ckpts=5,
     save_last=True,
@@ -253,14 +254,15 @@ checkpoint_config = dict(
 resume_from = None
 
 custom_hooks = [
- #   dict(
- #       type='EMAHook',
- #       ema_type='ExpMomentumEMA',
- #       momentum=0.0001,
- #       update_buffers=True,
-#        priority=49),
+    dict(
+        type='EMAHook',
+        ema_type='ExpMomentumEMA',
+        momentum=0.0001,
+        update_buffers=True,
+        strict_load=False, 
+        priority=49),
     dict(type='SyncBuffersHook'),
 #    dict(type='ProfilerHook', on_trace_ready=dict(type='tb_trace'))
 ]
-auto_scale_lr = dict(enable=False, base_batch_size=10)
+auto_scale_lr = dict(enable=False, base_batch_size=4)
 runner_type = 'FlexibleRunner'
